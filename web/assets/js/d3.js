@@ -16299,6 +16299,7 @@ exports.namespaces = namespaces;
 exports.select = select;
 exports.selectAll = selectAll;
 exports.selection = selection;
+exports.Selection = Selection;
 exports.selector = selector;
 exports.selectorAll = selectorAll;
 exports.touch = touch;

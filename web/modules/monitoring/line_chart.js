@@ -1,9 +1,5 @@
 'use strict';
 
-d3.selection.prototype.removeDOM = function() {
-    $(this.nodes()).remove();
-}
-
 function line_chart(cfg) {
     var config = $.extend({
         title:  false,
@@ -54,23 +50,32 @@ function line_chart(cfg) {
         yAxis.tickFormat(config.yTickFormat);
     }
 
+    var svg_text_title = false;
+    function setTitle(title) {
+        if (!svg_text_title) {
+            svg_text_title = chart.append("svg:text");
+        }
+        svg_text_title.html(title);
+        window.setTimeout(function(){
+            var w = svg_text_title._groups[0][0].clientWidth,
+                h = svg_text_title._groups[0][0].clientHeight;
+            svg_text_title
+                .translate(config.width/2-w/2, h+(margin.top-h)/2)
+                .style("font-size", "smaller");
+        },1)
+    }
+
     // draw title
     if (config.title) {
-        var x = chart.append("svg:text").text(config.title);
-        window.setTimeout(function(){
-            var w = x._groups[0][0].clientWidth,
-                h = x._groups[0][0].clientHeight;
-            x.attr("transform", "translate("+(config.width/2-w/2)+","+(h+(margin.top-h)/2)+")")
-             .style("font-size", "smaller");
-        },1)
+        setTitle(config.title);
     }
 
     // draw axes
     chart.append("g")
-        .attr("transform", "translate("+margin.left+","+(margin.top+height)+")")
+        .translate(margin.left, margin.top+height)
         .call(xAxis);
     chart.append("g")
-        .attr("transform", "translate("+margin.left+","+margin.top+")")
+        .translate(margin.left, margin.top)
         .call(yAxis);
 
     // draw tick lines across the graph board if requested
@@ -112,6 +117,11 @@ function line_chart(cfg) {
                     })
                     .style("fill", "none")
                     .attr("d", function(d){return line(d);});
+            return this;
+        },
+        setTitle: function(title){
+            setTitle(title);
+            return this;
         }
     };
     return o;

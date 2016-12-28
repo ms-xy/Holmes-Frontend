@@ -41,22 +41,7 @@ function SystemInfo(tab) {
         cpu:    {
                     el:    $("<div>").addClass("col-md-4"),
                     chart: line_chart({
-                        title: "CPU",
-                        width: 270,
-                        height: 170,
-                        xDomain:     [300, 0], // 300s = 5min
-                        xTickValues: [0, 60, 120, 180, 240, 300],
-                        xTickFormat: function(t){return (t/60)+" min";},
-                        yDomain:     [0, 100],
-                        yTickValues: [0, 25, 50, 75, 100],
-                        yTickFormat: function(t){return t+" %";},
-                        yTickLines:  [25, 50, 75, 100],
-                    })
-                },
-        memory: {
-                    el:    $("<div>").addClass("col-md-4"),
-                    chart: line_chart({
-                        title: "Memory",
+                        title: "<tspan style='fill:#0058ff'>CPU</tspan> / <tspan style='fill:green'>IOWait</tspan>",
                         width: 270,
                         height: 170,
                         xDomain:     [300, 0], // 300s = 5min
@@ -67,14 +52,34 @@ function SystemInfo(tab) {
                         yTickFormat: function(t){return t+" %";},
                         yTickLines:  [25, 50, 75, 100],
                         lines: [
-                            {color: "red"}
+                            {color: "#0058ff"},
+                            {color: "green"}
+                        ]
+                    })
+                },
+        memory: {
+                    el:    $("<div>").addClass("col-md-4"),
+                    chart: line_chart({
+                        title: "<tspan style='fill:red'>Memory</tspan> / <tspan style='fill:#ff9600'>Swap</tspan>",
+                        width: 270,
+                        height: 170,
+                        xDomain:     [300, 0], // 300s = 5min
+                        xTickValues: [0, 60, 120, 180, 240, 300],
+                        xTickFormat: function(t){return (t/60)+" min";},
+                        yDomain:     [0, 100],
+                        yTickValues: [0, 25, 50, 75, 100],
+                        yTickFormat: function(t){return t+" %";},
+                        yTickLines:  [25, 50, 75, 100],
+                        lines: [
+                            {color: "red"},
+                            {color: "#ff9600"}
                         ]
                     })
                 },
         load:   {
                     el:    $("<div>").addClass("col-md-4"),
                     chart: line_chart({
-                        title: "Systemload",
+                        title: "Systemload (<tspan style='fill:#005'>1</tspan>, <tspan style='fill:#338'>5</tspan>, <tspan style='fill:#88b'>15</tspan> min)",
                         width: 270,
                         height: 170,
                         xDomain:     [300, 0], // 300s = 5min
@@ -85,9 +90,9 @@ function SystemInfo(tab) {
                         yTickFormat: function(t){return (t*100)+" %";},
                         yTickLines:  [0, 0.25, 0.50, 0.75, 1, 1.5, 2],
                         lines: [
-                            {color: "#2196F3"},
-                            {color: "#00BCD4"},
-                            {color: "#3F51B5"}
+                            {color: "#005"},
+                            {color: "#338"},
+                            {color: "#88b"}
                         ]
                     })
                 }
@@ -102,28 +107,48 @@ function SystemInfo(tab) {
     var interval   = false,
         uuid       = false,
         cpuData    = [],
+        ioWaitData = [],
         memoryData = [],
+        swapData   = [],
         loads1     = [],
         loads5     = [],
         loads15    = [];
     function update(context) {
         ajax("monitoring", "get_sysinfo", {uuid: uuid}, function(resp){
-            // memory update
-            memoryData.unshift(resp.result.MemoryUsage/resp.result.MemoryMax*100);
-            if (memoryData.length > 300) {
-                memoryData.pop()
+            var result = resp.result;
+
+            // update cpu data array
+            var iowait = result.CpuIOWait,
+                idle   = result.CpuIdle,
+                busy   = result.CpuBusy,
+                total  = result.CpuTotal;
+            cpuData.unshift(((total - idle)/total) * 100);
+            ioWaitData.unshift((iowait/total) * 100);
+
+            // update memory data array
+            memoryData.unshift((result.MemoryUsage / result.MemoryMax) * 100);
+            swapData.unshift((result.SwapUsage / result.SwapMax) * 100);
+
+            // update system load data arrays
+            loads1.unshift(result.Loads1);
+            loads5.unshift(result.Loads5);
+            loads15.unshift(result.Loads15);
+
+            // trim oversize
+            if (cpuData.length > 300) {
+                cpuData.pop();
+                ioWaitData.pop();
+                memoryData.pop();
+                loads1.pop();
+                loads5.pop();
+                loads15.pop();
             }
-            charts.memory.chart.data([memoryData]);
-            // loads update
-            loads1.unshift(resp.result.Loads1);
-            loads5.unshift(resp.result.Loads5);
-            loads15.unshift(resp.result.Loads15);
-            if (loads1.length > 300) {
-                loads1.pop()
-                loads5.pop()
-                loads15.pop()
-            }
+
+            // update graphs
+            charts.cpu.chart.data([cpuData, ioWaitData]);
+            charts.memory.chart.data([memoryData, swapData]);
             charts.load.chart.data([loads1, loads5, loads15])
+
         }, context);
     }
 

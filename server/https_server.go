@@ -25,11 +25,12 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:         ":8017",
+		Addr:         ":9091",
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	log.Fatal(srv.ListenAndServeTLS("cert.crt", "cert.key"))
+	// log.Fatal(srv.ListenAndServeTLS("cert.crt", "cert.key"))
+	log.Fatal(srv.ListenAndServe())
 }
