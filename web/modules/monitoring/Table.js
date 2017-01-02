@@ -2,32 +2,38 @@
 
 function Table(cfg) {
     var _ = $.extend({
-        columns: [],
         /*
         Each column is defined by an object describing its properties.
-        Example:
-            {
-                i: "column_1",
-                th: "My Column",
-                data_fn: function(data, obj) {return humanReadable(data, "bytes")},
-                cssClasses: [
-                    {
-                        cls: "custom-td-class"
-                        fn: function(data, obj) {return (data.do_add_class) ? true : false}
-                    }
-                ]
-            }
+        Example see contents below.
         "i" is mandatory, whilst "th" and "fn" are not. "th" specifies
         the column header text, if none given it is left empty. The access
         function "data_fn" can be used to alter values before using them.
         It is passed 2 values, the "data" retrieved using the key (as defined
         in the properties) and the object "obj" containing the data.
-        Similarly the function "fn" of each css class receives the same
-        parameters, but its return value determines whether or not the css
-        classes defined by the key "cls" are set on the resulting <td>.
-        All css class definitions in the "cssClasses" array are applied in
-        order of definition until one is successfully applied.
         */
+        columns: [
+            // {
+            //     i: "column_1",
+            //     th: "My Column",
+            //     fn: function(data, obj) {return d3.format("-,.3s")(data)},
+            // }
+        ],
+        /*
+        Each row can be colored using bootstraps contextual classes.
+        (See http://getbootstrap.com/css/#tables-contextual-classes)
+        If the function supplied returns true, then the corresponding context
+        class is set.
+        The function receives the parameters "row-data", "row-index", "rows",
+        and "this" is set to the current DOM element.
+        All available classes are listed below:
+        */
+        cls: [
+            // { name: "active",  fn: false },
+            // { name: "success", fn: false },
+            // { name: "warning", fn: false },
+            // { name: "danger",  fn: false },
+            // { name: "info",    fn: false }
+        ],
     }, cfg);
 
     var table = $("<table>").addClass("table table-striped table-bordered table-hover"),
@@ -65,6 +71,14 @@ function Table(cfg) {
     }
     draw_title();
 
+    function apply_row_cls(o, i, trs, tr) {
+        $.each(_.cls, function(i, cls){
+            if (cls.name && cls.fn) {
+                d3.select(tr).classed(cls.name, cls.fn(o, i, trs));
+            }
+        });
+    }
+
     // build return object
     var o = {
         el: function(){return table;},
@@ -74,8 +88,10 @@ function Table(cfg) {
             rows.enter().append("tr").classed("table-row", true)
                 .merge(rows)
                     .select(function(o,i,trs){
-                        var tds = d3.select(trs[i]).selectAll("td").data(_.columns),
-                            tdsr =
+                        apply_row_cls(o, i, trs, this);
+
+                        var tds        = d3.select(trs[i]).selectAll("td").data(_.columns),
+                            tds_merged =
 
                         tds.enter().append("td")
                             .merge(tds)
@@ -84,12 +100,15 @@ function Table(cfg) {
                                 });
 
                         for (var jj=0; jj<_.columns.length; jj++) {
-                            if (_.columns[jj].cssClasses) {
+                            if (_.columns[jj].td_cls) {
+
+                            }
+                            if (_.columns[jj].tr_cls) {
                                 var cls, apply=false;
-                                for (var j=0; !apply && j<_.columns[i].cssClasses.length; j++) {
-                                    cls = _.colums[jj].cssClasses[j];
-                                    apply = cls.fn(o[_columns[jj].i], o);
-                                    tdsr.classed(cls.cls, apply)
+                                for (var j=0; !apply && j<_.columns[jj].tr_cls.length; j++) {
+                                    cls = _.columns[jj].tr_cls[j];
+                                    apply = cls.fn(o);
+
                                 }
                             }
                         }
@@ -97,7 +116,7 @@ function Table(cfg) {
                         tds.exit().remove();
 
                         return trs[i];
-                    });
+                    })
 
             rows.exit().remove();
 

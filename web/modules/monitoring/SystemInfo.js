@@ -108,6 +108,9 @@ function SystemInfo(tab) {
                     { i: "Used",       th: "Used",  fn: SIFormatBytes },
                     { i: "Total",      th: "Total", fn: SIFormatBytes },
                     { i: "Free",       th: "Free",  fn: SIFormatBytes },
+                ],
+                cls: [
+                    { name: "danger", fn: function(o,i,trs){return (o.Used/o.Total > 0.7)} }
                 ]
             })
         }
