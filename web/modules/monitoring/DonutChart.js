@@ -1,6 +1,6 @@
 'use strict';
 
-function donut_chart(width, height, domain, depth, datasetcount) {
+function DonutChart(width, height, domain, depth, datasetcount) {
     var el = $(document.createElementNS("http://www.w3.org/2000/svg", "svg"))
             .attr({"width":  width, "height": height})
             .css({ "width":  width, "height": height}),
