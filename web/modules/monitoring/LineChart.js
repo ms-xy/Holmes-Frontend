@@ -105,22 +105,9 @@ function LineChart(cfg) {
     var o = {
         el: function(){return el;},
         data: function(datasets){
-            // drawboard.selectAll("path").removeDOM();
-            // drawboard.selectAll("path")
-            //     .data(datasets)
-            //     .enter().append("path")
-            //         .style("stroke", function(d, i){
-            //             if (!config.lines[i] || !config.lines[i].color) {
-            //                 return "black";
-            //             }
-            //             return config.lines[i].color;
-            //         })
-            //         .style("fill", "none")
-            //         .attr("d", function(d){return line(d);});
-
-            // select old graphs and merge with new data, this merging is done
-            // by index, not by comparing contents, thus merging the enter
-            // selection (newly added graphs) with the existing ones is required
+            // Calling .data() gives us the changed (updated) nodes,
+            // .enter() only new indexes, .exit() only abandoned array indexes.
+            // For updating the charts, we need to merge .data() and .enter().
             var paths = drawboard.selectAll("path").data(datasets)
 
             // redraw existing and new graphs

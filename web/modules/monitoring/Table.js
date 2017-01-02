@@ -50,7 +50,9 @@ function Table(cfg) {
                         ),
             headers   =
 
-        rows.enter().append("tr").classed("table-header-row", true)
+        rows.enter().append("tr")
+                .classed("table-header-row", true)
+                .style("background-color", "#e5e5ff")
             .merge(rows)
             .selectAll(".table-header").data(titles);
 
