@@ -1,6 +1,6 @@
 'use strict';
 
-function line_chart(cfg) {
+function LineChart(cfg) {
     var config = $.extend({
         title:  false,
         width:  100,
@@ -105,18 +105,36 @@ function line_chart(cfg) {
     var o = {
         el: function(){return el;},
         data: function(datasets){
-            drawboard.selectAll("path").removeDOM();
-            drawboard.selectAll("path")
-                .data(datasets)
-                .enter().append("path")
-                    .style("stroke", function(d, i){
-                        if (!config.lines[i] || !config.lines[i].color) {
-                            return "black";
-                        }
-                        return config.lines[i].color;
-                    })
-                    .style("fill", "none")
-                    .attr("d", function(d){return line(d);});
+            // drawboard.selectAll("path").removeDOM();
+            // drawboard.selectAll("path")
+            //     .data(datasets)
+            //     .enter().append("path")
+            //         .style("stroke", function(d, i){
+            //             if (!config.lines[i] || !config.lines[i].color) {
+            //                 return "black";
+            //             }
+            //             return config.lines[i].color;
+            //         })
+            //         .style("fill", "none")
+            //         .attr("d", function(d){return line(d);});
+
+            // select old graphs and merge with new data, this merging is done
+            // by index, not by comparing contents, thus merging the enter
+            // selection (newly added graphs) with the existing ones is required
+            var paths = drawboard.selectAll("path").data(datasets)
+
+            // redraw existing and new graphs
+            paths.enter().append("path").merge(paths)
+                .style("stroke", function(d, i){
+                    return (config.lines[i] && config.lines[i].color) ?
+                        config.lines[i].color : "black";
+                })
+                .style("fill", "none")
+                .attr("d", function(d){return line(d);});
+
+            // remove old, now non-existant, graphs
+            paths.exit().remove();
+
             return this;
         },
         setTitle: function(title){

@@ -40,7 +40,7 @@ function SystemInfo(tab) {
         row:    $("<div>").addClass("row"),
         cpu:    {
                     el:    $("<div>").addClass("col-md-4"),
-                    chart: line_chart({
+                    chart: new LineChart({
                         title: "<tspan style='fill:#0058ff'>CPU</tspan> / <tspan style='fill:green'>IOWait</tspan>",
                         width: 270,
                         height: 170,
@@ -59,7 +59,7 @@ function SystemInfo(tab) {
                 },
         memory: {
                     el:    $("<div>").addClass("col-md-4"),
-                    chart: line_chart({
+                    chart: new LineChart({
                         title: "<tspan style='fill:red'>Memory</tspan> / <tspan style='fill:#ff9600'>Swap</tspan>",
                         width: 270,
                         height: 170,
@@ -78,7 +78,7 @@ function SystemInfo(tab) {
                 },
         load:   {
                     el:    $("<div>").addClass("col-md-4"),
-                    chart: line_chart({
+                    chart: new LineChart({
                         title: "Systemload (<tspan style='fill:#005'>1</tspan>, <tspan style='fill:#338'>5</tspan>, <tspan style='fill:#88b'>15</tspan> min)",
                         width: 270,
                         height: 170,
@@ -97,25 +97,47 @@ function SystemInfo(tab) {
                     })
                 }
     };
-    container.append(charts.row.append([
-        charts.cpu.el.append(charts.cpu.chart.el()),
-        charts.memory.el.append(charts.memory.chart.el()),
-        charts.load.el.append(charts.load.chart.el())
-    ]));
+    var SIFormatBytes = d3.format("-,.3s")
+    var tables = {
+        harddrives: {
+            el: $("<div>").addClass("col-md-12"),
+            table: new Table({
+                columns: [
+                    { i: "FsType",     th: "Filesystem" },
+                    { i: "MountPoint", th: "Mount-Point" },
+                    { i: "Used",       th: "Used",  fn: SIFormatBytes },
+                    { i: "Total",      th: "Total", fn: SIFormatBytes },
+                    { i: "Free",       th: "Free",  fn: SIFormatBytes },
+                ]
+            })
+        }
+    };
+    container.append(
+        charts.row.append(
+            charts.cpu.el.append(charts.cpu.chart.el()),
+            charts.memory.el.append(charts.memory.chart.el()),
+            charts.load.el.append(charts.load.chart.el())
+            ),
+        $('<div>')
+            // .addClass("well well-sm")
+            .addClass("alert alert-info")
+            .html(`In order to preserve uniformity and comparability, the above load graph is scaled by the amount of available processing units`),
+        tables.harddrives.table.el()
+    );
 
     // update and interval
-    var interval   = false,
-        uuid       = false,
-        cpuData    = [],
-        ioWaitData = [],
-        memoryData = [],
-        swapData   = [],
-        loads1     = [],
-        loads5     = [],
-        loads15    = [];
+    var interval    = false,
+        machineUuid = false,
+        cpuData     = [],
+        ioWaitData  = [],
+        memoryData  = [],
+        swapData    = [],
+        loads1      = [],
+        loads5      = [],
+        loads15     = [];
     function update(context) {
-        ajax("monitoring", "get_sysinfo", {uuid: uuid}, function(resp){
-            var result = resp.result;
+        ajax("monitoring", "get_sysinfo", {machineUuid: machineUuid}, function(response){
+            var result = response.result;
 
             // update cpu data array
             var iowait = result.CpuIOWait,
@@ -139,6 +161,7 @@ function SystemInfo(tab) {
                 cpuData.pop();
                 ioWaitData.pop();
                 memoryData.pop();
+                swapData.pop();
                 loads1.pop();
                 loads5.pop();
                 loads15.pop();
@@ -147,26 +170,31 @@ function SystemInfo(tab) {
             // update graphs
             charts.cpu.chart.data([cpuData, ioWaitData]);
             charts.memory.chart.data([memoryData, swapData]);
-            charts.load.chart.data([loads1, loads5, loads15])
+            charts.load.chart.data([loads1, loads5, loads15]);
+
+            // update harddrives table
+            tables.harddrives.table.setData(result.Harddrives);
 
         }, context);
     }
 
+    function stop() {
+        if (interval) {
+            window.clearInterval(interval);
+        }
+    }
+
+    function show(_machineUuid) {
+        machineUuid = _machineUuid
+        this.stop()
+        update(this);
+        interval = window.setInterval(update, 1000, this);
+    }
+
     // build return object
     var o = {
-        show: function(_uuid){
-            uuid = _uuid
-            if (interval) {
-                window.clearInterval(interval);
-            }
-            update();
-            interval = window.setInterval(update, 1000, this);
-        },
-        stop: function(){
-            if (interval) {
-                window.clearInterval(interval);
-            }
-        }
+        show: show,
+        stop: stop
     };
     return o;
 }
@@ -182,11 +210,47 @@ function NetworkInfo(tab) {
 }
 
 function PlannersInfo(tab) {
+    var container = $("<div>").addClass("container");
+    tab.append(container);
+
+    var interval = false,
+        machineUuid = false;
+
+    function update(context) {
+        // type PlannerInformation struct {
+        //     Name          string
+        //     PID           uint64
+        //     IP            net.IP
+        //     Port          int
+        //     Configuration string
+        //     Logs          *LogBuffer
+        //     Services      map[uint16]*ServiceInformation
+        // }
+        ajax("monitoring", "get_planners", {machineUuid: machineUuid}, function(response){
+            var planners = response.result;
+            $.each(planners, function(i, o){
+                container.append($("<div>").text(o.Name))
+            });
+        });
+    }
+
+    function stop() {
+        if (interval) {
+            window.clearInterval(interval);
+        }
+    }
+
+    function show(_machineUuid) {
+        machineUuid = _machineUuid
+        this.stop()
+        update(this);
+        interval = window.setInterval(update, 1000, this);
+    }
 
     // build return object
     var o = {
-        show: function(uuid){},
-        stop: function(){}
+        show: show,
+        stop: stop
     };
     return o;
 }
@@ -356,7 +420,7 @@ function create_listing_row(values) {
 
 
 function update_navigation(navigation){
-    ajax("monitoring", "get_uuids", {p:"-"}, function(r){
+    ajax("monitoring", "get_machines", {p:"-"}, function(r){
         for (var i=0; i<r.result.length; i++) {
             navigation.insert(r.result[i]);
         }
