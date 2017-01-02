@@ -34,7 +34,18 @@ function Table(cfg) {
             // { name: "danger",  fn: false },
             // { name: "info",    fn: false }
         ],
+        /*
+        Set debug to true to receive additional console output.
+        */
+        debug: false
     }, cfg);
+
+    var debug = $.noop;
+    if (_.debug) {
+        debug = function() {
+            console.log.apply(this, arguments);
+        }
+    }
 
     var table = $("<table>").addClass("table table-striped table-bordered table-hover"),
         tbody = $("<tbody>");
@@ -83,11 +94,15 @@ function Table(cfg) {
     var o = {
         el: function(){return table;},
         setData: function(_rows){
+            debug("TABLE :: _rows:",_rows);
             var rows = d3.select(tbody[0]).selectAll(".table-row").data(_rows);
+            debug("TABLE :: rows:", rows);
 
             rows.enter().append("tr").classed("table-row", true)
                 .merge(rows)
                     .select(function(o,i,trs){
+                        debug("TABLE :: o,i,trs:", o,i,trs);
+
                         apply_row_cls(o, i, trs, this);
 
                         var tds        = d3.select(trs[i]).selectAll("td").data(_.columns),

@@ -97,14 +97,14 @@ function SystemInfo(tab) {
                     })
                 }
     };
-    var SIFormatBytes = d3.format("-,.3s")
+    var SIFormatBytes = d3.format("-,.3s");
     var tables = {
         harddrives: {
             el: $("<div>").addClass("col-md-12"),
             table: new Table({
                 columns: [
-                    { i: "FsType",     th: "Filesystem" },
-                    { i: "MountPoint", th: "Mount-Point" },
+                    { i: "FsType",     th: "Filesystem"               },
+                    { i: "MountPoint", th: "Mount-Point"              },
                     { i: "Used",       th: "Used",  fn: SIFormatBytes },
                     { i: "Total",      th: "Total", fn: SIFormatBytes },
                     { i: "Free",       th: "Free",  fn: SIFormatBytes },

@@ -8,15 +8,6 @@ function PlannersInfo(tab) {
         machineUuid = false;
 
     function update(context) {
-        // type PlannerInformation struct {
-        //     Name          string
-        //     PID           uint64
-        //     IP            net.IP
-        //     Port          int
-        //     Configuration string
-        //     Logs          *LogBuffer
-        //     Services      map[uint16]*ServiceInformation
-        // }
         ajax("monitoring", "get_planners", {machineUuid: machineUuid}, function(response){
             var planners = response.result;
             $.each(planners, function(i, o){
