@@ -83,9 +83,12 @@ function Table(cfg) {
     draw_title();
 
     function apply_row_cls(o, i, trs, tr) {
+        var apply = false;
         $.each(_.cls, function(i, cls){
             if (cls.name && cls.fn) {
-                d3.select(tr).classed(cls.name, cls.fn(o, i, trs));
+                apply = cls.fn(o, i, trs);
+                d3.select(tr).classed(cls.name, apply);
+                return !apply;
             }
         });
     }

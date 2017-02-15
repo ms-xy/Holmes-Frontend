@@ -26,9 +26,9 @@ function UuidNavigation() {
     }
     content.container.append(content.el.append([content.systeminfo, content.networkinfo, content.plannersinfo]));
 
-    var systeminfo = SystemInfo(content.systeminfo),
-        networkinfo = NetworkInfo(content.networkinfo),
-        plannersinfo = PlannersInfo(content.plannersinfo);
+    var systeminfo = SystemInfoTab(content.systeminfo),
+        networkinfo = NetworkInfoTab(content.networkinfo),
+        plannersinfo = PlannerInfoTab(content.plannersinfo);
 
     // build return object
     var o = {
@@ -66,6 +66,11 @@ function UuidNavigation() {
             systeminfo.show(event.data.uuid);
             networkinfo.show(event.data.uuid);
             plannersinfo.show(event.data.uuid);
+        },
+        update: function(resultset){
+            for (var i=0; i<resultset.length; i++) {
+                this.insert(resultset[i].machine_uuid);
+            }
         },
         // public methods
         insert: function(uuid){

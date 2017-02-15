@@ -1,6 +1,6 @@
 'use strict';
 
-function SystemInfo(tab) {
+function SystemInfoTab(tab) {
     var container = $("<div>").addClass("container");
     tab.append(container);
     // build dom
@@ -190,8 +190,8 @@ function SystemInfo(tab) {
     function show(_machineUuid) {
         machineUuid = _machineUuid
         this.stop()
-        update(this);
-        interval = window.setInterval(update, 1000, this);
+        // update(this);
+        // interval = window.setInterval(update, 1000, this);
     }
 
     // build return object
