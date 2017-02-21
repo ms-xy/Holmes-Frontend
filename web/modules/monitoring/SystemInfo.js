@@ -44,7 +44,7 @@ function SystemInfoTab(tab) {
                         title: "<tspan style='fill:#0058ff'>CPU</tspan> / <tspan style='fill:green'>IOWait</tspan>",
                         width: 270,
                         height: 170,
-                        xDomain:     [300, 0], // 300s = 5min
+                        xDomain:     [0, 300], // 300s = 5min
                         xTickValues: [0, 60, 120, 180, 240, 300],
                         xTickFormat: function(t){return (t/60)+" min";},
                         yDomain:     [0, 100],
@@ -63,7 +63,7 @@ function SystemInfoTab(tab) {
                         title: "<tspan style='fill:red'>Memory</tspan> / <tspan style='fill:#ff9600'>Swap</tspan>",
                         width: 270,
                         height: 170,
-                        xDomain:     [300, 0], // 300s = 5min
+                        xDomain:     [0, 300], // 300s = 5min
                         xTickValues: [0, 60, 120, 180, 240, 300],
                         xTickFormat: function(t){return (t/60)+" min";},
                         yDomain:     [0, 100],
@@ -82,7 +82,7 @@ function SystemInfoTab(tab) {
                         title: "Systemload (<tspan style='fill:#005'>1</tspan>, <tspan style='fill:#338'>5</tspan>, <tspan style='fill:#88b'>15</tspan> min)",
                         width: 270,
                         height: 170,
-                        xDomain:     [300, 0], // 300s = 5min
+                        xDomain:     [0, 300], // 300s = 5min
                         xTickValues: [0, 60, 120, 180, 240, 300],
                         xTickFormat: function(t){return (t/60)+" min";},
                         yDomain:     [0, 2],
@@ -130,53 +130,90 @@ function SystemInfoTab(tab) {
 
     // update and interval
     var interval    = false,
-        machineUuid = false,
-        cpuData     = [],
-        ioWaitData  = [],
-        memoryData  = [],
-        swapData    = [],
-        loads1      = [],
-        loads5      = [],
-        loads15     = [];
+        limit       = 300,
+        machineUuid = false;
+
     function update(context) {
-        ajax("monitoring", "get_sysinfo", {machineUuid: machineUuid}, function(response){
-            var result = response.result;
+        var request_data = {
+            machineUuid: machineUuid,
+            limit:       limit,
+        };
+        // limit = 1; // TODO switch from limit to time frame
 
-            // update cpu data array
-            var iowait = result.CpuIOWait,
-                idle   = result.CpuIdle,
-                busy   = result.CpuBusy,
-                total  = result.CpuTotal;
-            cpuData.unshift(((total - idle)/total) * 100);
-            ioWaitData.unshift((iowait/total) * 100);
+        ajax("monitoring", "get_sysinfo", request_data, function(response){
+            var sysinfos    = response.result,
+                l           = sysinfos.length,
+                cpuData     = Array.apply(null, Array(l)),
+                ioWaitData  = Array.apply(null, Array(l)),
+                memoryData  = Array.apply(null, Array(l)),
+                swapData    = Array.apply(null, Array(l)),
+                loads1      = Array.apply(null, Array(l)),
+                loads5      = Array.apply(null, Array(l)),
+                loads15     = Array.apply(null, Array(l));
 
-            // update memory data array
-            memoryData.unshift((result.MemoryUsage / result.MemoryMax) * 100);
-            swapData.unshift((result.SwapUsage / result.SwapMax) * 100);
+            $.each(sysinfos, function(i,info){
+                var timestamp = moment(info.timestamp).unix();
 
-            // update system load data arrays
-            loads1.unshift(result.Loads1);
-            loads5.unshift(result.Loads5);
-            loads15.unshift(result.Loads15);
+                // update cpu data array
+                var iowait = info.cpu_iowait,
+                    idle   = info.cpu_idle,
+                    busy   = info.cpu_busy,
+                    total  = info.cpu_total;
+                cpuData[i] = {
+                    y: ((total - idle)/total) * 100,
+                    x: timestamp
+                };
+                ioWaitData[i] = {
+                    y: (iowait/total) * 100,
+                    x: timestamp
+                };
 
-            // trim oversize
+                // update memory data array
+                // console.log(info);
+                memoryData[i] = {
+                    y: (info.mem_usage / info.mem_max) * 100,
+                    x: timestamp
+                };
+                swapData[i] = {
+                    y: (info.swap_usage / info.swap_max) * 100,
+                    x: timestamp
+                };
+
+                // update system load data arrays
+                loads1[i] = {
+                    y: info.loads_1,
+                    x: timestamp
+                };
+                loads5[i] = {
+                    y: info.loads_5,
+                    x: timestamp
+                };
+                loads15[i] = {
+                    y: info.loads_15,
+                    x: timestamp
+                };
+            });
+
+            // trim oversize, need only one comparison for that, as all datasets
+            // have the same size
             if (cpuData.length > 300) {
-                cpuData.pop();
-                ioWaitData.pop();
-                memoryData.pop();
-                swapData.pop();
-                loads1.pop();
-                loads5.pop();
-                loads15.pop();
+                cpuData    = cpuData   .slice(0, 300);
+                ioWaitData = ioWaitData.slice(0, 300);
+                memoryData = memoryData.slice(0, 300);
+                swapData   = swapData  .slice(0, 300);
+                loads1     = loads1    .slice(0, 300);
+                loads5     = loads5    .slice(0, 300);
+                loads15    = loads15   .slice(0, 300);
             }
+
 
             // update graphs
             charts.cpu.chart.data([cpuData, ioWaitData]);
             charts.memory.chart.data([memoryData, swapData]);
             charts.load.chart.data([loads1, loads5, loads15]);
 
-            // update harddrives table
-            tables.harddrives.table.setData(result.Harddrives);
+            // // update harddrives table
+            // tables.harddrives.table.setData(result.Harddrives);
 
         }, context);
     }
@@ -190,8 +227,8 @@ function SystemInfoTab(tab) {
     function show(_machineUuid) {
         machineUuid = _machineUuid
         this.stop()
-        // update(this);
-        // interval = window.setInterval(update, 1000, this);
+        update(this);
+        interval = window.setInterval(update, 5000, this);
     }
 
     // build return object

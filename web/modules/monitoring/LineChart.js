@@ -30,7 +30,7 @@ function LineChart(cfg) {
         drawboard = chart.append("g")
             .attr("transform", "translate("+margin.left+","+margin.top+")"),
 
-        xScale  = d3.scaleLinear().domain(config.xDomain).range([0, width]),
+        xScale  = d3.scaleLinear().domain(config.xDomain).range([0, width]).clamp(true),
         yScale  = d3.scaleLinear().domain(config.yDomain).range([height, 0]),
 
         xAxis   = d3.axisBottom(xScale),
@@ -108,7 +108,8 @@ function LineChart(cfg) {
             // Calling .data() gives us the changed (updated) nodes,
             // .enter() only new indexes, .exit() only abandoned array indexes.
             // For updating the charts, we need to merge .data() and .enter().
-            var paths = drawboard.selectAll("path").data(datasets)
+            var paths = drawboard.selectAll("path").data(datasets),
+                basetime = moment().subtract(5,"minutes").unix();
 
             // redraw existing and new graphs
             paths.enter().append("path").merge(paths)
@@ -117,7 +118,16 @@ function LineChart(cfg) {
                         config.lines[i].color : "black";
                 })
                 .style("fill", "none")
-                .attr("d", function(d){return line(d);});
+                .attr("d", function(d){
+                    return d3.line()
+                        .x(function(d, i){
+                            return xScale(d.x-basetime);
+                        })
+                        .y(function(d, i){
+                            return yScale(d.y);
+                        })
+                    (d);
+                });
 
             // remove old, now non-existant, graphs
             paths.exit().remove();

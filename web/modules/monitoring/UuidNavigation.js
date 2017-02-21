@@ -1,5 +1,29 @@
 'use strict';
 
+function NavItem(o) {
+    if (o && o.navitem) return o.navitem;
+    // create the nav element
+    var item = $("<li>")
+        .attr("role","presentation")
+        .append($("<a>")
+            .attr("role","tab")
+            .text(o)); // o == uuid
+    item[0].navitem = this;
+    return {
+        el: item,
+        onClick: function(fn, context) {
+            item
+            .off("click")
+            .on("click", null, {uuid: uuid, item: this}, $.proxy(fn, context));
+        },
+        destroy: function() {
+            item
+            .off()
+            .remove(true);
+        }
+    };
+}
+
 function UuidNavigation() {
     // build dom
     var uuidnav = {
