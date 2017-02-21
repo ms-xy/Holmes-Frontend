@@ -31,7 +31,7 @@ function LineChart(cfg) {
             .attr("transform", "translate("+margin.left+","+margin.top+")"),
 
         xScale  = d3.scaleLinear().domain(config.xDomain).range([0, width]).clamp(true),
-        yScale  = d3.scaleLinear().domain(config.yDomain).range([height, 0]),
+        yScale  = d3.scaleLinear().domain(config.yDomain).range([height, 0]).clamp(true),
 
         xAxis   = d3.axisBottom(xScale),
         yAxis   = d3.axisLeft(yScale);
